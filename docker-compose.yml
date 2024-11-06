@@ -1,0 +1,46 @@
+services:
+  redis:
+    image: redis:latest
+    ports:
+      - ${REDIS_PORT}:${REDIS_PORT}
+
+  line-provider:
+    env_file: .env
+    build:
+      context: ./line_provider
+    ports:
+      - "8000:8000"
+    expose:
+      - ${BACKEND_PORT_2}
+    depends_on:
+      - redis
+      - db
+
+  bet-maker:
+    env_file: .env
+    build:
+      context: ./bet_maker
+    ports:
+      - "8001:8001"
+    expose:
+      - ${BACKEND_PORT_1}
+    depends_on:
+      - redis
+      - db
+      - line-provider
+
+  db:
+    env_file: .env
+    image: postgres:15.4-alpine3.18
+    restart: always
+    environment:
+      - PGPORT=${DB_PORT}
+      - POSTGRES_PASSWORD=${DB_PASS}
+      - POSTGRES_DB=${DB_NAME}
+    ports:
+      - ${DB_PORT}:${DB_PORT}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+volumes:
+  db-data:
